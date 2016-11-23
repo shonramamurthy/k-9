@@ -36,4 +36,8 @@ public class MessageCryptoAnnotations {
         }
         return null;
     }
+
+    public boolean isEmpty() {
+        return annotations.isEmpty();
+    }
 }

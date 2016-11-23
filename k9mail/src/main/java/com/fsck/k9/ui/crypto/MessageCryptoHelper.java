@@ -64,6 +64,7 @@ public class MessageCryptoHelper {
 
     private final Context context;
     private final String openPgpProviderPackage;
+    private final TrustIdOperations trustIdOperations;
     private final Object callbackLock = new Object();
     private final Deque<CryptoPart> partsToDecryptOrVerify = new ArrayDeque<>();
 
@@ -81,6 +82,7 @@ public class MessageCryptoHelper {
     private Intent currentCryptoResult;
     private Intent userInteractionResultIntent;
     private boolean secondPassStarted;
+    private boolean thirdPassStarted;
     private CancelableBackgroundOperation cancelableBackgroundOperation;
     private boolean isCancelled;
 
@@ -91,6 +93,7 @@ public class MessageCryptoHelper {
     public MessageCryptoHelper(Context context, String openPgpProviderPackage) {
         this.context = context.getApplicationContext();
         this.openPgpProviderPackage = openPgpProviderPackage;
+        this.trustIdOperations = new TrustIdOperations();
 
         if (openPgpProviderPackage == null || Account.NO_OPENPGP_PROVIDER.equals(openPgpProviderPackage)) {
             throw new IllegalStateException("MessageCryptoHelper must only be called with a openpgp provider!");
@@ -120,11 +123,26 @@ public class MessageCryptoHelper {
     }
 
     private void runSecondPass() {
+        secondPassStarted = true;
+
         List<Part> signedParts = MessageDecryptVerifier.findSignedParts(currentMessage, messageAnnotations);
         processFoundSignedParts(signedParts);
 
         List<Part> inlineParts = MessageDecryptVerifier.findPgpInlineParts(currentMessage);
         addFoundInlinePgpParts(inlineParts);
+
+        decryptOrVerifyNextPart();
+    }
+
+    private void runThirdPass() {
+        thirdPassStarted = true;
+
+        if (messageAnnotations.isEmpty()) {
+            if (trustIdOperations.hasOpenPgpHeader(currentMessage)) {
+                CryptoPart cryptoPart = new CryptoPart(CryptoPartType.UNSIGNED, currentMessage);
+                partsToDecryptOrVerify.add(cryptoPart);
+            }
+        }
 
         decryptOrVerifyNextPart();
     }
@@ -189,7 +207,7 @@ public class MessageCryptoHelper {
         }
 
         if (partsToDecryptOrVerify.isEmpty()) {
-            runSecondPassOrReturnResultToFragment();
+            runNextPassOrReturnResultToFragment();
             return;
         }
 
@@ -247,6 +265,7 @@ public class MessageCryptoHelper {
             decryptIntent.putExtra(OpenPgpApi.EXTRA_SENDER_ADDRESS, from[0].getAddress());
             decryptIntent.putExtra(OpenPgpApi.EXTRA_TRUST_IDENTITY, from[0].getAddress());
         }
+//        trustIdOperations.addKeyFromOpenPgpHeaderToIntentIfPresent(currentMessage, decryptIntent);
 
         decryptIntent.putExtra(OpenPgpApi.EXTRA_DECRYPTION_RESULT, cachedDecryptionResult);
 
@@ -269,6 +288,10 @@ public class MessageCryptoHelper {
                     callAsyncInlineOperation(intent);
                     return;
                 }
+                case UNSIGNED: {
+                    callAsyncParseOpenPgpHeaderOperation();
+                    return;
+                }
             }
 
             throw new IllegalStateException("Unknown crypto part type: " + cryptoPartType);
@@ -277,6 +300,12 @@ public class MessageCryptoHelper {
         } catch (MessagingException e) {
             Log.e(K9.LOG_TAG, "MessagingException", e);
         }
+    }
+
+    private void callAsyncParseOpenPgpHeaderOperation() {
+        // TODO make actually async (then callback to onCryptoFinished)
+        trustIdOperations.processUnsignedMessage(openPgpApi, (LocalMessage) currentCryptoPart.part);
+        onCryptoFinished();
     }
 
     private void callAsyncInlineOperation(Intent intent) throws IOException {
@@ -598,13 +627,16 @@ public class MessageCryptoHelper {
         decryptOrVerifyNextPart();
     }
 
-    private void runSecondPassOrReturnResultToFragment() {
-        if (secondPassStarted) {
-            callbackReturnResult();
+    private void runNextPassOrReturnResultToFragment() {
+        if (!secondPassStarted) {
+            runSecondPass();
             return;
         }
-        secondPassStarted = true;
-        runSecondPass();
+        if (!thirdPassStarted) {
+            runThirdPass();
+            return;
+        }
+        callbackReturnResult();
     }
 
     private void cleanupAfterProcessingFinished() {
@@ -697,7 +729,8 @@ public class MessageCryptoHelper {
     private enum CryptoPartType {
         PGP_INLINE,
         PGP_ENCRYPTED,
-        PGP_SIGNED
+        PGP_SIGNED,
+        UNSIGNED
     }
 
     @Nullable
