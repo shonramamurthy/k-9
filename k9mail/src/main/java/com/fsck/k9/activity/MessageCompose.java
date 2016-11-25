@@ -45,6 +45,7 @@ import android.widget.Toast;
 
 import com.fsck.k9.Account;
 import com.fsck.k9.Account.MessageFormat;
+import com.fsck.k9.BuildConfig;
 import com.fsck.k9.FontSizes;
 import com.fsck.k9.Identity;
 import com.fsck.k9.K9;
@@ -94,6 +95,7 @@ import com.fsck.k9.message.SimpleMessageFormat;
 import com.fsck.k9.ui.EolConvertingEditText;
 import com.fsck.k9.ui.compose.QuotedMessageMvpView;
 import com.fsck.k9.ui.compose.QuotedMessagePresenter;
+import org.openintents.openpgp.util.OpenPgpApi;
 
 
 @SuppressWarnings("deprecation")
@@ -623,7 +625,14 @@ public class MessageCompose extends K9Activity implements OnClickListener,
             }
 
             recipientPresenter.initFromSendOrViewIntent(intent);
+        }
 
+        if ((BuildConfig.APPLICATION_ID + ".TRUST_ID_ACTION").equals(action)) {
+            String trustId = intent.getStringExtra(OpenPgpApi.EXTRA_TRUST_IDENTITY);
+            if (trustId != null) {
+                recipientPresenter.initFromTrustIdAction(trustId);
+                startedByExternalIntent = true;
+            }
         }
 
         return startedByExternalIntent;
