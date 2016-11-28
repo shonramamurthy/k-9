@@ -257,7 +257,7 @@ public class PgpMessageBuilderTest {
     public void buildEncrypt__shouldSucceed() throws MessagingException {
         ComposeCryptoStatus cryptoStatus = cryptoStatusBuilder
                 .setCryptoMode(CryptoMode.PRIVATE)
-                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1, "key")))
+                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1L, "key")))
                 .build();
         pgpMessageBuilder.setCryptoStatus(cryptoStatus);
 
@@ -309,7 +309,7 @@ public class PgpMessageBuilderTest {
     public void buildEncrypt__withInlineEnabled__shouldSucceed() throws MessagingException {
         ComposeCryptoStatus cryptoStatus = cryptoStatusBuilder
                 .setCryptoMode(CryptoMode.PRIVATE)
-                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1, "key")))
+                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1L, "key")))
                 .setEnablePgpInline(true)
                 .build();
         pgpMessageBuilder.setCryptoStatus(cryptoStatus);
@@ -347,7 +347,7 @@ public class PgpMessageBuilderTest {
     public void buildSign__withInlineEnabled__shouldSucceed() throws MessagingException {
         ComposeCryptoStatus cryptoStatus = cryptoStatusBuilder
                 .setCryptoMode(CryptoMode.SIGN_ONLY)
-                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1, "key")))
+                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1L, "key")))
                 .setEnablePgpInline(true)
                 .build();
         pgpMessageBuilder.setCryptoStatus(cryptoStatus);
@@ -413,7 +413,7 @@ public class PgpMessageBuilderTest {
     @Test
     public void buildOpportunisticEncrypt__withNoKeysAndNoSignOnly__shouldNotBeSigned() throws MessagingException {
         ComposeCryptoStatus cryptoStatus = cryptoStatusBuilder
-                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1, "key")))
+                .setRecipients(Collections.singletonList(new Recipient("test", "test@example.org", "labru", -1L, "key")))
                 .setCryptoMode(CryptoMode.OPPORTUNISTIC)
                 .build();
         pgpMessageBuilder.setCryptoStatus(cryptoStatus);
