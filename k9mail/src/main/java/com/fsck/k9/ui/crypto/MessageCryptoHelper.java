@@ -64,7 +64,7 @@ public class MessageCryptoHelper {
 
     private final Context context;
     private final String openPgpProviderPackage;
-    private final TrustIdOperations trustIdOperations;
+    private final InbomeOperations inbomeOperations;
     private final Object callbackLock = new Object();
     private final Deque<CryptoPart> partsToDecryptOrVerify = new ArrayDeque<>();
 
@@ -93,7 +93,7 @@ public class MessageCryptoHelper {
     public MessageCryptoHelper(Context context, String openPgpProviderPackage) {
         this.context = context.getApplicationContext();
         this.openPgpProviderPackage = openPgpProviderPackage;
-        this.trustIdOperations = new TrustIdOperations();
+        this.inbomeOperations = new InbomeOperations();
 
         if (openPgpProviderPackage == null || Account.NO_OPENPGP_PROVIDER.equals(openPgpProviderPackage)) {
             throw new IllegalStateException("MessageCryptoHelper must only be called with a openpgp provider!");
@@ -138,7 +138,7 @@ public class MessageCryptoHelper {
         thirdPassStarted = true;
 
         if (messageAnnotations.isEmpty()) {
-            if (trustIdOperations.hasOpenPgpHeader(currentMessage)) {
+            if (inbomeOperations.hasInbomeHeader(currentMessage)) {
                 CryptoPart cryptoPart = new CryptoPart(CryptoPartType.UNSIGNED, currentMessage);
                 partsToDecryptOrVerify.add(cryptoPart);
             }
@@ -289,7 +289,7 @@ public class MessageCryptoHelper {
                     return;
                 }
                 case UNSIGNED: {
-                    callAsyncParseOpenPgpHeaderOperation();
+                    callAsyncParseInbomeHeaderOperation();
                     return;
                 }
             }
@@ -302,9 +302,9 @@ public class MessageCryptoHelper {
         }
     }
 
-    private void callAsyncParseOpenPgpHeaderOperation() {
+    private void callAsyncParseInbomeHeaderOperation() {
         // TODO make actually async (then callback to onCryptoFinished)
-        trustIdOperations.processUnsignedMessage(openPgpApi, (LocalMessage) currentCryptoPart.part);
+        inbomeOperations.processUnsignedMessage(openPgpApi, (LocalMessage) currentCryptoPart.part);
         onCryptoFinished();
     }
 
