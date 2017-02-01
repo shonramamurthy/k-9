@@ -50,6 +50,7 @@ public class OpenPgpAppPreference extends DialogPreference {
 
     private static final String PACKAGE_NAME_APG = "org.thialfihar.android.apg";
     private static final ArrayList<String> PROVIDER_BLACKLIST = new ArrayList<>();
+    private OnDialogClosedListener onDialogCloseListener;
 
     static {
         // Unfortunately, the current released version of APG includes a broken version of the API
@@ -151,12 +152,20 @@ public class OpenPgpAppPreference extends DialogPreference {
         builder.setPositiveButton(null, null);
     }
 
+    public void setOnDialogCloseListener(OnDialogClosedListener onDialogCloseListener) {
+        this.onDialogCloseListener = onDialogCloseListener;
+    }
+
     @Override
     protected void onDialogClosed(boolean positiveResult) {
         super.onDialogClosed(positiveResult);
 
         if (positiveResult && (mSelectedPackage != null)) {
             save();
+        }
+
+        if (onDialogCloseListener != null) {
+            onDialogCloseListener.onDialogClosed();
         }
     }
 
@@ -331,6 +340,10 @@ public class OpenPgpAppPreference extends DialogPreference {
         public String toString() {
             return simpleName;
         }
+    }
+
+    public interface OnDialogClosedListener {
+        void onDialogClosed();
     }
 
     public static boolean isApgInstalled(Context context) {

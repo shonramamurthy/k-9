@@ -1,5 +1,6 @@
 package com.fsck.k9.activity.setup;
 
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +21,7 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceScreen;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Toast;
 
 import com.fsck.k9.K9;
@@ -37,10 +39,10 @@ import com.fsck.k9.preferences.CheckBoxListPreference;
 import com.fsck.k9.preferences.Storage;
 import com.fsck.k9.preferences.StorageEditor;
 import com.fsck.k9.preferences.TimePickerPreference;
-
 import com.fsck.k9.service.MailService;
 import com.fsck.k9.ui.dialog.ApgDeprecationWarningDialog;
 import org.openintents.openpgp.util.OpenPgpAppPreference;
+import org.openintents.openpgp.util.OpenPgpAppPreference.OnDialogClosedListener;
 
 
 public class Prefs extends K9PreferenceActivity {
@@ -113,6 +115,8 @@ public class Prefs extends K9PreferenceActivity {
 
     private static final int DIALOG_APG_DEPRECATION_WARNING = 1;
 
+    private static final String EXTRA_SHOW_OPENPGP_PROVIDER = "show_crypto_provider";
+
     // Named indices for the mVisibleRefileActions field
     private static final int VISIBLE_REFILE_ACTIONS_DELETE = 0;
     private static final int VISIBLE_REFILE_ACTIONS_ARCHIVE = 1;
@@ -169,6 +173,7 @@ public class Prefs extends K9PreferenceActivity {
     private CheckBoxPreference mBackgroundAsUnreadIndicator;
     private CheckBoxPreference mThreadedView;
     private ListPreference mSplitViewMode;
+    private boolean showingApgDialogHint;
 
 
     public static void actionPrefs(Context context) {
@@ -395,6 +400,7 @@ public class Prefs extends K9PreferenceActivity {
                 String value = newValue.toString();
                 if (APG_PROVIDER_PLACEHOLDER.equals(value)) {
                     mOpenPgpProvider.setValue("");
+                    showingApgDialogHint = true;
                     showDialog(DIALOG_APG_DEPRECATION_WARNING);
                 } else {
                     mOpenPgpProvider.setValue(value);
@@ -460,6 +466,30 @@ public class Prefs extends K9PreferenceActivity {
         mSplitViewMode = (ListPreference) findPreference(PREFERENCE_SPLITVIEW_MODE);
         initListPreference(mSplitViewMode, K9.getSplitViewMode().name(),
                 mSplitViewMode.getEntries(), mSplitViewMode.getEntryValues());
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+
+        Intent intent = getIntent();
+        boolean shouldLaunchPrefScreen = savedInstanceState == null &&
+                intent.getBooleanExtra(EXTRA_SHOW_OPENPGP_PROVIDER, false);
+        if (shouldLaunchPrefScreen) {
+            mOpenPgpProvider.setOnDialogCloseListener(new OnDialogClosedListener() {
+                @Override
+                public void onDialogClosed() {
+                    if (showingApgDialogHint) {
+                        showingApgDialogHint = false;
+                        return;
+                    }
+
+                    finish();
+                }
+            });
+            getListView().setVisibility(View.GONE);
+            mOpenPgpProvider.show();
+        }
     }
 
     private static String themeIdToName(K9.Theme theme) {
