@@ -21,6 +21,7 @@ import com.fsck.k9.Account;
 import com.fsck.k9.Account.ShowPictures;
 import com.fsck.k9.K9;
 import com.fsck.k9.R;
+import com.fsck.k9.activity.setup.Prefs;
 import com.fsck.k9.helper.Contacts;
 import com.fsck.k9.mail.Address;
 import com.fsck.k9.mail.Message;
@@ -182,6 +183,21 @@ public class MessageTopView extends LinearLayout {
             @Override
             public void onClick(View view) {
                 messageCryptoPresenter.onClickRetryCryptoOperation();
+            }
+        });
+
+        containerView.addView(view);
+        displayViewOnLoadFinished(false);
+    }
+
+    public void showNoCryptoProviderConfigured(MessageViewInfo messageViewInfo) {
+        resetAndPrepareMessageView(messageViewInfo);
+        View view = mInflater.inflate(R.layout.message_content_crypto_no_provider, containerView, false);
+
+        view.findViewById(R.id.crypto_settings).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Prefs.actionPrefs();
             }
         });
 
